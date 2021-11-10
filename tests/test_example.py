@@ -13,7 +13,7 @@
 # limitations under the License.
 import aiounittest
 
-from tests import create_module, MockEvent
+from tests import MockEvent, create_module
 
 
 class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
@@ -31,7 +31,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             sender=self.user_id,
             state_key=self.invitee,
             type="m.room.member",
-            content={"membership": "invite"}
+            content={"membership": "invite"},
         )
 
         await self.module.on_new_event(event=invite)
@@ -53,7 +53,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             sender=self.user_id,
             state_key=self.remote_invitee,
             type="m.room.member",
-            content={"membership": "invite"}
+            content={"membership": "invite"},
         )
 
         await self.module.on_new_event(event=invite)
@@ -63,9 +63,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
     async def test_not_state(self) -> None:
         """Tests that receiving an invite that's not a state event does nothing."""
         invite = MockEvent(
-            sender=self.user_id,
-            type="m.room.member",
-            content={"membership": "invite"}
+            sender=self.user_id, type="m.room.member", content={"membership": "invite"}
         )
 
         await self.module.on_new_event(event=invite)
@@ -78,7 +76,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             sender=self.user_id,
             state_key=self.user_id,
             type="m.room.member",
-            content={"membership": "join"}
+            content={"membership": "join"},
         )
 
         await self.module.on_new_event(event=invite)
@@ -93,11 +91,9 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             sender=self.user_id,
             state_key=self.user_id,
             type="org.matrix.test",
-            content={"foo": "bar"}
+            content={"foo": "bar"},
         )
 
         await self.module.on_new_event(event=invite)
 
         self.assertEqual(self.module._api.update_room_membership.call_count, 0)
-
-

@@ -24,6 +24,7 @@ from synapse_auto_accept_invite import InviteAutoAccepter
 @attr.s(auto_attribs=True)
 class MockEvent:
     """Mocks an event. Only exposes properties the module uses."""
+
     sender: str
     type: str
     content: dict
