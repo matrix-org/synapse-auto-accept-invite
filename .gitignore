@@ -1,0 +1,7 @@
+/.idea
+/.venv
+/*.egg-info
+/.envrc
+/.tox
+/_trial_temp
+__pycache__
