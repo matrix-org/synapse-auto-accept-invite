@@ -7,7 +7,7 @@ Synapse module to automatically accept invites
 
 From the virtual environment that you use for Synapse, install this module with:
 ```shell
-pip install path/to/synapse-auto-accept-invite
+pip install synapse-auto-accept-invite
 ```
 (If you run into issues, you may need to upgrade `pip` first, e.g. by running
 `pip install --upgrade pip`)
@@ -16,8 +16,7 @@ Then alter your homeserver configuration, adding to your `modules` configuration
 ```yaml
 modules:
   - module: synapse_auto_accept_invite.InviteAutoAccepter
-    config:
-      # TODO: Complete this section with an example for your module
+    config: {}
 ```
 
 
@@ -41,9 +40,6 @@ To run the linters and `mypy` type checker, use `./scripts-dev/lint.sh`.
 
 
 ## Releasing
-
-The exact steps for releasing will vary; but this is an approach taken by the
-Synapse developers (assuming a Unix-like shell):
 
  1. Set a shell variable to the version you are releasing (this just makes
     subsequent steps easier):
@@ -75,8 +71,8 @@ Synapse developers (assuming a Unix-like shell):
     git push origin tag v$version
     ```
 
- 7. If applicable:
-    Create a *release*, based on the tag you just pushed, on GitHub or GitLab.
-
- 8. If applicable:
-    Create a source distribution and upload it to PyPI.
+ 7. Create a source distribution and upload it to PyPI:
+    ```shell
+    python3 setup.py sdist
+    twine upload dist/synapse-auto-accept-invite-$version.tar.gz
+    ```
