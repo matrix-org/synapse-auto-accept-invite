@@ -71,8 +71,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         self.assertEqual(self.module._api.update_room_membership.call_count, 0)
 
     async def test_not_invite(self) -> None:
-        """Tests that receiving a membership update that's not an invite does nothing.
-        """
+        """Tests that receiving a membership update that's not an invite does nothing."""
         invite = MockEvent(
             sender=self.user_id,
             state_key=self.user_id,
