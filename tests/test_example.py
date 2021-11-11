@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import Mock
+
 import aiounittest
 
 from tests import MockEvent, create_module
@@ -23,6 +25,9 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         self.invitee = "@lesley:test"
         self.remote_invitee = "@thomas:remote"
 
+        # We know our module API is a mock, but mypy doesn't.
+        self.mocked_update_membership: Mock = self.module._api.update_room_membership  # type: ignore[assignment]
+
     async def test_accept_invite(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
         make the invitee join the room.
@@ -34,14 +39,16 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             content={"membership": "invite"},
         )
 
-        await self.module.on_new_event(event=invite)
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
         # Check that the mocked method is called exactly once.
-        self.module._api.update_room_membership.assert_called_once()
+        self.mocked_update_membership.assert_called_once()
 
         # Check that the mocked method is called with the right arguments to attempt to
         # make the user join the room.
-        kwargs = self.module._api.update_room_membership.call_args[1]
+        kwargs = self.mocked_update_membership.call_args[1]
         self.assertEqual(kwargs["sender"], invite.state_key)
         self.assertEqual(kwargs["target"], invite.state_key)
         self.assertEqual(kwargs["room_id"], invite.room_id)
@@ -56,9 +63,11 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             content={"membership": "invite"},
         )
 
-        await self.module.on_new_event(event=invite)
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.module._api.update_room_membership.call_count, 0)
+        self.assertEqual(self.mocked_update_membership.call_count, 0)
 
     async def test_not_state(self) -> None:
         """Tests that receiving an invite that's not a state event does nothing."""
@@ -66,9 +75,11 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             sender=self.user_id, type="m.room.member", content={"membership": "invite"}
         )
 
-        await self.module.on_new_event(event=invite)
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.module._api.update_room_membership.call_count, 0)
+        self.assertEqual(self.mocked_update_membership.call_count, 0)
 
     async def test_not_invite(self) -> None:
         """Tests that receiving a membership update that's not an invite does nothing."""
@@ -79,9 +90,11 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             content={"membership": "join"},
         )
 
-        await self.module.on_new_event(event=invite)
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.module._api.update_room_membership.call_count, 0)
+        self.assertEqual(self.mocked_update_membership.call_count, 0)
 
     async def test_not_membership(self) -> None:
         """Tests that receiving a state event that's not a membership update does
@@ -94,6 +107,8 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             content={"foo": "bar"},
         )
 
-        await self.module.on_new_event(event=invite)
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.module._api.update_room_membership.call_count, 0)
+        self.assertEqual(self.mocked_update_membership.call_count, 0)

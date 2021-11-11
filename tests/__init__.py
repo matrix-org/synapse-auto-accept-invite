@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from asyncio import Future
-from typing import Any, Awaitable, Optional
+from typing import Any, Awaitable, Optional, Dict
 from unittest.mock import Mock
 
 import attr
@@ -27,20 +27,21 @@ class MockEvent:
 
     sender: str
     type: str
-    content: dict
+    content: Dict[str, Any]
     room_id: str = "!someroom"
     state_key: Optional[str] = None
 
-    def is_state(self):
+    def is_state(self) -> bool:
         """Checks if the event is a state event by checking if it has a state key."""
         return self.state_key is not None
 
     @property
-    def membership(self):
+    def membership(self) -> str:
         """Extracts the membership from the event. Should only be called on an event
         that's a membership event, and will raise a KeyError otherwise.
         """
-        return self.content["membership"]
+        membership: str = self.content["membership"]
+        return membership
 
 
 def create_module() -> InviteAutoAccepter:

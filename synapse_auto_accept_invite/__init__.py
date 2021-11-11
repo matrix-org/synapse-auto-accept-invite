@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Dict, Any
+
 from synapse.module_api import EventBase, ModuleApi
 
 
 class InviteAutoAccepter:
-    def __init__(self, config: dict, api: ModuleApi):
+    def __init__(self, config: Dict[str, Any], api: ModuleApi):
         # Keep a reference to the Module API.
         self._api = api
 
@@ -24,7 +26,7 @@ class InviteAutoAccepter:
             on_new_event=self.on_new_event,
         )
 
-    async def on_new_event(self, event: EventBase, *args) -> None:
+    async def on_new_event(self, event: EventBase, *args: Any) -> None:
         """Listens for new events, and if the event is an invite for a local user then
         automatically accepts it.
 
