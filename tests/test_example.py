@@ -43,16 +43,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # Check that the mocked method is called exactly once.
-        self.mocked_update_membership.assert_called_once()
-
-        # Check that the mocked method is called with the right arguments to attempt to
-        # make the user join the room.
-        kwargs = self.mocked_update_membership.call_args[1]
-        self.assertEqual(kwargs["sender"], invite.state_key)
-        self.assertEqual(kwargs["target"], invite.state_key)
-        self.assertEqual(kwargs["room_id"], invite.room_id)
-        self.assertEqual(kwargs["new_membership"], "join")
+        # Check that the mocked method is called exactly once and with the right
+        # arguments to attempt to make the user join the room.
+        self.mocked_update_membership.assert_called_once_with(
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
     async def test_remote_user(self) -> None:
         """Tests that receiving an invite for a remote user does nothing."""
@@ -67,7 +65,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.mocked_update_membership.call_count, 0)
+        self.mocked_update_membership.assert_not_called()
 
     async def test_not_state(self) -> None:
         """Tests that receiving an invite that's not a state event does nothing."""
@@ -79,7 +77,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.mocked_update_membership.call_count, 0)
+        self.mocked_update_membership.assert_not_called()
 
     async def test_not_invite(self) -> None:
         """Tests that receiving a membership update that's not an invite does nothing."""
@@ -94,7 +92,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.mocked_update_membership.call_count, 0)
+        self.mocked_update_membership.assert_not_called()
 
     async def test_not_membership(self) -> None:
         """Tests that receiving a state event that's not a membership update does
@@ -111,4 +109,4 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        self.assertEqual(self.mocked_update_membership.call_count, 0)
+        self.mocked_update_membership.assert_not_called()

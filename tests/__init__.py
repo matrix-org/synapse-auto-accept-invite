@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from asyncio import Future
-from typing import Any, Awaitable, Dict, Optional
+from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
 import attr
@@ -52,10 +51,8 @@ def create_module() -> InviteAutoAccepter:
 
     # Python 3.6 doesn't support awaiting on a mock, so we make it return an awaitable
     # value.
-    def make_awaitable(result: Any) -> Awaitable[Any]:
-        future = Future()  # type: ignore
-        future.set_result(result)
-        return future
+    async def make_awaitable(result: Any) -> Any:
+        return result
 
     module_api.update_room_membership.return_value = make_awaitable(None)
 
