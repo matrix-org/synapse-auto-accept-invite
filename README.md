@@ -75,5 +75,5 @@ To run the linters and `mypy` type checker, use `./scripts-dev/lint.sh`.
  7. Create a source distribution and upload it to PyPI:
     ```shell
     python -m build
-    twine upload dist/synapse_auto_accept_invite-$version.tar.gz
+    twine upload dist/synapse_auto_accept_invite-$version*
     ```
