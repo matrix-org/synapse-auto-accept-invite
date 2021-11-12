@@ -3,5 +3,5 @@
 /*.egg-info
 /.envrc
 /.tox
-/_trial_temp
+_trial_temp
 __pycache__
