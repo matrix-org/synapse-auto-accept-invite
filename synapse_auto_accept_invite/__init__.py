@@ -47,3 +47,9 @@ class InviteAutoAccepter:
                 room_id=event.room_id,
                 new_membership="join",
             )
+            await self._api.update_m_direct(
+                sender=event.sender,
+                target=event.state_key,
+                room_id=event.room_id,
+                content=event.content,
+            )
