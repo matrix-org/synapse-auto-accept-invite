@@ -43,7 +43,7 @@ class MockEvent:
         return membership
 
 
-def create_module() -> InviteAutoAccepter:
+def create_module(config_override: Dict[str, Any] = {}) -> InviteAutoAccepter:
     # Create a mock based on the ModuleApi spec, but override some mocked functions
     # because some capabilities are needed for running the tests.
     module_api = Mock(spec=ModuleApi)
@@ -55,5 +55,6 @@ def create_module() -> InviteAutoAccepter:
         return result
 
     module_api.update_room_membership.return_value = make_awaitable(None)
+    config = InviteAutoAccepter.parse_config(config_override)
 
-    return InviteAutoAccepter({}, module_api)
+    return InviteAutoAccepter(config, module_api)
