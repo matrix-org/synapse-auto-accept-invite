@@ -55,7 +55,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
 
     async def test_accept_invite_direct_message(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
-        make the invitee join the room also if it is a direct message.
+        make the invitee join the room even if the invite is for a direct message room.
         """
         invite = MockEvent(
             sender=self.user_id,
@@ -139,8 +139,8 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
     async def test_accept_invite_direct_message_if_only_enabled_for_direct_messages(
         self,
     ) -> None:
-        """Tests that receiving an invite for a local user makes the module attempt to
-        make the invitee join the room for a direct message.
+        """Tests that, if the module is configured to only accept DM invites, invites to DM rooms are still
+        automatically accepted.
         """
         module = create_module(
             config_override={"accept_invites_only_for_direct_messages": True},
@@ -168,7 +168,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         )
 
     async def test_ignore_invite_if_only_enabled_for_direct_messages(self) -> None:
-        """Tests that receiving an invite user does nothing if it is disabled in module."""
+        """Tests that, if the module is configured to only accept DM invites, invites to non-DM rooms are ignored."""
         module = create_module(
             config_override={"accept_invites_only_for_direct_messages": True},
         )

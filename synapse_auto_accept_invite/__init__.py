@@ -37,13 +37,16 @@ class InviteAutoAccepter:
     def parse_config(config: Dict[str, Any]) -> InviteAutoAccepterConfig:
         """Checks that the required fields are present and at a correct value, and
         instantiates a InviteAutoAccepterConfig.
+
         Args:
             config: The raw configuration dict.
+
         Returns:
             A InviteAutoAccepterConfig generated from this configuration
         """
+        accept_invites_only_for_direct_messages = config.get("accept_invites_only_for_direct_messages", False)
         return InviteAutoAccepterConfig(
-            config.get("accept_invites_only_for_direct_messages", False)
+            accept_invites_only_for_direct_messages=accept_invites_only_for_direct_messages,
         )
 
     async def on_new_event(self, event: EventBase, *args: Any) -> None:
@@ -62,10 +65,8 @@ class InviteAutoAccepter:
         ):
             is_direct_message = event.content.get("is_direct", False)
 
-            # always for direct messages and if enabled for all messages (not only direct messages)
-            if (
-                is_direct_message and isinstance(is_direct_message, bool)
-            ) or not self._config.accept_invites_only_for_direct_messages:
+            # Only accept invites for direct messages if the configuration mandates it, otherwise accept all invites.
+            if not self._config.accept_invites_only_for_direct_messages or is_direct_message is True:
                 # Make the user join the room.
                 await self._api.update_room_membership(
                     sender=event.state_key,

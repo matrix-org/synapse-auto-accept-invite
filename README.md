@@ -19,7 +19,7 @@ modules:
   - module: synapse_auto_accept_invite.InviteAutoAccepter
     config:
       # Optional: if set to true, then only invites for direct messages (1:1 rooms)
-      # where auto accepted, otherwise for all rooms
+      # will be auto accepted. Otherwise, all room invites are accepted.
       # Defaults to false.
       accept_invites_only_for_direct_messages: false
 ```
