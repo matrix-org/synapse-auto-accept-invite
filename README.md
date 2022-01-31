@@ -17,7 +17,11 @@ Then alter your homeserver configuration, adding to your `modules` configuration
 ```yaml
 modules:
   - module: synapse_auto_accept_invite.InviteAutoAccepter
-    config: {}
+    config:
+      # Optional: if set to true, then only invites for direct messages (1:1 rooms)
+      # will be auto accepted. Otherwise, all room invites are accepted.
+      # Defaults to false.
+      accept_invites_only_for_direct_messages: false
 ```
 
 

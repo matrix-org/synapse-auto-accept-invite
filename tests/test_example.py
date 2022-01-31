@@ -15,6 +15,7 @@ from unittest.mock import Mock
 
 import aiounittest
 
+from synapse_auto_accept_invite import InviteAutoAccepter
 from tests import MockEvent, create_module
 
 
@@ -37,6 +38,30 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             state_key=self.invitee,
             type="m.room.member",
             content={"membership": "invite"},
+        )
+
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
+
+        # Check that the mocked method is called exactly once and with the right
+        # arguments to attempt to make the user join the room.
+        self.mocked_update_membership.assert_called_once_with(
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
+
+    async def test_accept_invite_direct_message(self) -> None:
+        """Tests that receiving an invite for a local user makes the module attempt to
+        make the invitee join the room even if the invite is for a direct message room.
+        """
+        invite = MockEvent(
+            sender=self.user_id,
+            state_key=self.invitee,
+            type="m.room.member",
+            content={"membership": "invite", "is_direct": True},
         )
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
@@ -110,3 +135,63 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
         self.mocked_update_membership.assert_not_called()
+
+    async def test_accept_invite_direct_message_if_only_enabled_for_direct_messages(
+        self,
+    ) -> None:
+        """Tests that, if the module is configured to only accept DM invites, invites to DM rooms are still
+        automatically accepted.
+        """
+        module = create_module(
+            config_override={"accept_invites_only_for_direct_messages": True},
+        )
+
+        invite = MockEvent(
+            sender=self.user_id,
+            state_key=self.invitee,
+            type="m.room.member",
+            content={"membership": "invite", "is_direct": True},
+        )
+
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await module.on_new_event(event=invite)  # type: ignore[arg-type]
+
+        # Check that the mocked method is called exactly once and with the right
+        # arguments to attempt to make the user join the room.
+        mocked_update_membership: Mock = module._api.update_room_membership  # type: ignore[assignment]
+        mocked_update_membership.assert_called_once_with(
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
+
+    async def test_ignore_invite_if_only_enabled_for_direct_messages(self) -> None:
+        """Tests that, if the module is configured to only accept DM invites, invites to non-DM rooms are ignored."""
+        module = create_module(
+            config_override={"accept_invites_only_for_direct_messages": True},
+        )
+
+        invite = MockEvent(
+            sender=self.user_id,
+            state_key=self.invitee,
+            type="m.room.member",
+            content={"membership": "invite"},
+        )
+
+        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
+        # EventBase.
+        await module.on_new_event(event=invite)  # type: ignore[arg-type]
+
+        mocked_update_membership: Mock = module._api.update_room_membership  # type: ignore[assignment]
+        mocked_update_membership.assert_not_called()
+
+    def test_config_parse(self) -> None:
+        """Tests that a correct configuration passes parse_config."""
+        config = {
+            "accept_invites_only_for_direct_messages": True,
+        }
+        parsed_config = InviteAutoAccepter.parse_config(config)
+
+        self.assertTrue(parsed_config.accept_invites_only_for_direct_messages)
