@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
 import attr
@@ -43,6 +43,13 @@ class MockEvent:
         return membership
 
 
+T = TypeVar("T")
+
+
+async def make_awaitable(value: T) -> T:
+    return value
+
+
 def create_module(config_override: Dict[str, Any] = {}) -> InviteAutoAccepter:
     # Create a mock based on the ModuleApi spec, but override some mocked functions
     # because some capabilities are needed for running the tests.
@@ -51,9 +58,6 @@ def create_module(config_override: Dict[str, Any] = {}) -> InviteAutoAccepter:
 
     # Python 3.6 doesn't support awaiting on a mock, so we make it return an awaitable
     # value.
-    async def make_awaitable(result: Any) -> Any:
-        return result
-
     module_api.update_room_membership.return_value = make_awaitable(None)
     config = InviteAutoAccepter.parse_config(config_override)
 

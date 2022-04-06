@@ -17,7 +17,7 @@ from unittest.mock import Mock
 import aiounittest
 
 from synapse_auto_accept_invite import InviteAutoAccepter
-from tests import MockEvent, create_module
+from tests import MockEvent, create_module, make_awaitable
 
 
 class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
@@ -72,13 +72,16 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         account_data_put: Mock = cast(
             Mock, self.module._api.account_data_manager.put_global
         )
+        account_data_put.return_value = make_awaitable(None)
+
         account_data_get: Mock = cast(
             Mock, self.module._api.account_data_manager.get_global
         )
-
-        account_data_get.return_value = {
-            "@someone:random": ["!somewhere:random"],
-        }
+        account_data_get.return_value = make_awaitable(
+            {
+                "@someone:random": ["!somewhere:random"],
+            }
+        )
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
         # EventBase.
@@ -174,6 +177,13 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         module = create_module(
             config_override={"accept_invites_only_for_direct_messages": True},
         )
+
+        # Patch out the account data get and put methods with dummy awaitables.
+        account_data_put: Mock = cast(Mock, module._api.account_data_manager.put_global)
+        account_data_put.return_value = make_awaitable(None)
+
+        account_data_get: Mock = cast(Mock, module._api.account_data_manager.get_global)
+        account_data_get.return_value = make_awaitable({})
 
         invite = MockEvent(
             sender=self.user_id,
