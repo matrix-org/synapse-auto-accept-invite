@@ -99,9 +99,12 @@ class InviteAutoAccepter:
         """
 
         # This dict of User IDs to lists of Room IDs
-        dm_map: Dict[str, List[str]] = await self._api.account_data_manager.get_global(
-            user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
-        ) or {}
+        dm_map: Dict[str, List[str]] = (
+            await self._api.account_data_manager.get_global(
+                user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
+            )
+            or {}
+        )
 
         if dm_user_id not in dm_map:
             dm_map[dm_user_id] = [room_id]
