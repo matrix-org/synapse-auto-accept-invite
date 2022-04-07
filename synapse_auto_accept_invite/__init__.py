@@ -32,6 +32,22 @@ class InviteAutoAccepter:
         self._api = api
         self._config = config
 
+        should_run_on_this_worker = (
+            config.worker_to_run_on is None and self._api.worker_name is None
+        ) or (config.worker_to_run_on == self._api.worker_name)
+
+        if not should_run_on_this_worker:
+            logger.info(
+                "Not accepting invites on this worker (configured: %r, here: %r)",
+                config.worker_to_run_on,
+                self._api.worker_name,
+            )
+            return
+
+        logger.info(
+            "Accepting invites on this worker (here: %r)", self._api.worker_name
+        )
+
         # Register the callback.
         self._api.register_third_party_rules_callbacks(
             on_new_event=self.on_new_event,
