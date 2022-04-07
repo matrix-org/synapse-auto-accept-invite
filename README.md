@@ -22,6 +22,14 @@ modules:
       # will be auto accepted. Otherwise, all room invites are accepted.
       # Defaults to false.
       accept_invites_only_for_direct_messages: false
+
+      # (For workerised Synapse deployments)
+      # If you want to accept invites on a specific worker, specify its instance
+      # name here. Otherwise, invites will be processed on the main process.
+      #
+      # Any worker can be used.
+      #
+      #worker_to_run_on: workername1
 ```
 
 
