@@ -25,6 +25,17 @@ modules:
 ```
 
 
+### A note about logging
+
+Your Synapse logging configuration should have the following option set in it:
+
+```yaml
+disable_existing_loggers: False
+```
+
+Without it, logging from this module (and potentially others) may not appear in your logs.
+
+
 ## Development
 
 In a virtual environment with pip ≥ 21.1, run

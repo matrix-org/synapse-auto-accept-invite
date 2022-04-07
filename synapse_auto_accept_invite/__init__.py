@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Any, Dict
+import logging
 
 import attr
 from synapse.module_api import EventBase, ModuleApi
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, frozen=True)
