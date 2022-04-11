@@ -201,7 +201,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         """
         Tests that the module only runs on the specified worker.
         """
-        # By default, we run on the main module...
+        # By default, we run on the main process...
         main_module = create_module(worker_name=None)
         cast(
             Mock, main_module._api.register_third_party_rules_callbacks
