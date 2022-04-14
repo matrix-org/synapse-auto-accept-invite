@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import cast
 from unittest.mock import Mock
 
 import aiounittest
@@ -195,3 +196,28 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         parsed_config = InviteAutoAccepter.parse_config(config)
 
         self.assertTrue(parsed_config.accept_invites_only_for_direct_messages)
+
+    def test_runs_on_only_one_worker(self) -> None:
+        """
+        Tests that the module only runs on the specified worker.
+        """
+        # By default, we run on the main process...
+        main_module = create_module(worker_name=None)
+        cast(
+            Mock, main_module._api.register_third_party_rules_callbacks
+        ).assert_called_once()
+
+        # ...and not on other workers (like synchrotrons)...
+        sync_module = create_module(worker_name="synchrotron42")
+        cast(
+            Mock, sync_module._api.register_third_party_rules_callbacks
+        ).assert_not_called()
+
+        # ...unless we configured them to be the designated worker.
+        specified_module = create_module(
+            config_override={"worker_to_run_on": "account_data1"},
+            worker_name="account_data1",
+        )
+        cast(
+            Mock, specified_module._api.register_third_party_rules_callbacks
+        ).assert_called_once()

@@ -11,15 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict
+import logging
+from typing import Any, Dict, Optional
 
 import attr
 from synapse.module_api import EventBase, ModuleApi
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, frozen=True)
 class InviteAutoAccepterConfig:
     accept_invites_only_for_direct_messages: bool = False
+    worker_to_run_on: Optional[str] = None
 
 
 class InviteAutoAccepter:
@@ -27,6 +31,20 @@ class InviteAutoAccepter:
         # Keep a reference to the Module API.
         self._api = api
         self._config = config
+
+        should_run_on_this_worker = config.worker_to_run_on == self._api.worker_name
+
+        if not should_run_on_this_worker:
+            logger.info(
+                "Not accepting invites on this worker (configured: %r, here: %r)",
+                config.worker_to_run_on,
+                self._api.worker_name,
+            )
+            return
+
+        logger.info(
+            "Accepting invites on this worker (here: %r)", self._api.worker_name
+        )
 
         # Register the callback.
         self._api.register_third_party_rules_callbacks(
@@ -47,8 +65,12 @@ class InviteAutoAccepter:
         accept_invites_only_for_direct_messages = config.get(
             "accept_invites_only_for_direct_messages", False
         )
+
+        worker_to_run_on = config.get("worker_to_run_on", None)
+
         return InviteAutoAccepterConfig(
             accept_invites_only_for_direct_messages=accept_invites_only_for_direct_messages,
+            worker_to_run_on=worker_to_run_on,
         )
 
     async def on_new_event(self, event: EventBase, *args: Any) -> None:

@@ -43,11 +43,14 @@ class MockEvent:
         return membership
 
 
-def create_module(config_override: Dict[str, Any] = {}) -> InviteAutoAccepter:
+def create_module(
+    config_override: Dict[str, Any] = {}, worker_name: Optional[str] = None
+) -> InviteAutoAccepter:
     # Create a mock based on the ModuleApi spec, but override some mocked functions
     # because some capabilities are needed for running the tests.
     module_api = Mock(spec=ModuleApi)
     module_api.is_mine.side_effect = lambda a: a.split(":")[1] == "test"
+    module_api.worker_name = worker_name
 
     # Python 3.6 doesn't support awaiting on a mock, so we make it return an awaitable
     # value.
