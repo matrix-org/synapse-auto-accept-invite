@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 from synapse.module_api import EventBase, ModuleApi
 
 logger = logging.getLogger(__name__)
+ACCOUNT_DATA_DIRECT_MESSAGE_LIST = "m.direct"
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -101,3 +102,42 @@ class InviteAutoAccepter:
                     room_id=event.room_id,
                     new_membership="join",
                 )
+
+                if is_direct_message:
+                    # Mark this room as a direct message!
+                    await self._mark_room_as_direct_message(
+                        event.state_key, event.sender, event.room_id
+                    )
+
+    async def _mark_room_as_direct_message(
+        self, user_id: str, dm_user_id: str, room_id: str
+    ) -> None:
+        """
+        Marks a room (`room_id`) as a direct message with the counterparty `dm_user_id`
+        from the perspective of the user `user_id`.
+        """
+
+        # This dict of User IDs to lists of Room IDs
+        dm_map: Dict[str, List[str]] = (
+            await self._api.account_data_manager.get_global(
+                user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
+            )
+            or {}
+        )
+
+        if dm_user_id not in dm_map:
+            dm_map[dm_user_id] = [room_id]
+        else:
+            if not isinstance(dm_map[dm_user_id], list):
+                # Don't mangle the data if we don't understand it.
+                logger.warning(
+                    "Not marking room as DM for auto-accepted invitatation; dm_map[%r] not a list.",
+                    dm_user_id,
+                )
+                return
+
+            dm_map[dm_user_id].append(room_id)
+
+        await self._api.account_data_manager.put_global(
+            user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST, dm_map
+        )

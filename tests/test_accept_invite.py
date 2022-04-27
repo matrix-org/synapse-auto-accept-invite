@@ -17,7 +17,7 @@ from unittest.mock import Mock
 import aiounittest
 
 from synapse_auto_accept_invite import InviteAutoAccepter
-from tests import MockEvent, create_module
+from tests import MockEvent, create_module, make_awaitable
 
 
 class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
@@ -57,12 +57,30 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
     async def test_accept_invite_direct_message(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
         make the invitee join the room even if the invite is for a direct message room.
+        Moreover, check that the room is marked as a direct message in this case.
         """
         invite = MockEvent(
             sender=self.user_id,
             state_key=self.invitee,
             type="m.room.member",
             content={"membership": "invite", "is_direct": True},
+            room_id="!the:room",
+        )
+
+        # We will mock out the account data get/put methods to check that the flags
+        # are properly set.
+        account_data_put: Mock = cast(
+            Mock, self.module._api.account_data_manager.put_global
+        )
+        account_data_put.return_value = make_awaitable(None)
+
+        account_data_get: Mock = cast(
+            Mock, self.module._api.account_data_manager.get_global
+        )
+        account_data_get.return_value = make_awaitable(
+            {
+                "@someone:random": ["!somewhere:random"],
+            }
         )
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
@@ -76,6 +94,19 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             target=invite.state_key,
             room_id=invite.room_id,
             new_membership="join",
+        )
+
+        account_data_get.assert_called_once_with(self.invitee, "m.direct")
+
+        # Check that the account data was correctly updated; notably that it doesn't
+        # overwrite the existing associations!
+        account_data_put.assert_called_once_with(
+            self.invitee,
+            "m.direct",
+            {
+                "@someone:random": ["!somewhere:random"],
+                self.user_id: ["!the:room"],
+            },
         )
 
     async def test_remote_user(self) -> None:
@@ -146,6 +177,13 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         module = create_module(
             config_override={"accept_invites_only_for_direct_messages": True},
         )
+
+        # Patch out the account data get and put methods with dummy awaitables.
+        account_data_put: Mock = cast(Mock, module._api.account_data_manager.put_global)
+        account_data_put.return_value = make_awaitable(None)
+
+        account_data_get: Mock = cast(Mock, module._api.account_data_manager.get_global)
+        account_data_get.return_value = make_awaitable({})
 
         invite = MockEvent(
             sender=self.user_id,
