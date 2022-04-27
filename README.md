@@ -22,7 +22,26 @@ modules:
       # will be auto accepted. Otherwise, all room invites are accepted.
       # Defaults to false.
       accept_invites_only_for_direct_messages: false
+
+      # (For workerised Synapse deployments)
+      # If you want to accept invites on a specific worker, specify its instance
+      # name here. Otherwise, invites will be processed on the main process.
+      #
+      # Any worker can be used.
+      #
+      #worker_to_run_on: workername1
 ```
+
+
+### A note about logging
+
+Your Synapse logging configuration should have the following option set in it:
+
+```yaml
+disable_existing_loggers: False
+```
+
+Without it, logging from this module (and potentially others) may not appear in your logs.
 
 
 ## Development
