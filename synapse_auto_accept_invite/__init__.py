@@ -120,6 +120,9 @@ class InviteAutoAccepter:
         # This is a dict of User IDs to tuples of Room IDs
         # (get_global will return a frozendict of tuples as it freezes the data,
         # but we should accept either frozen or unfrozen variants.)
+        # Be careful: we convert the outer frozendict into a dict here,
+        # but the contents of the dict are still frozen (tuples in lieu of lists,
+        # etc.)
         dm_map: Dict[str, Tuple[str, ...]] = dict(
             await self._api.account_data_manager.get_global(
                 user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
