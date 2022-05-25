@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import attr
 from synapse.module_api import EventBase, ModuleApi
@@ -117,8 +117,10 @@ class InviteAutoAccepter:
         from the perspective of the user `user_id`.
         """
 
-        # This dict of User IDs to lists of Room IDs
-        dm_map: Dict[str, List[str]] = (
+        # This dict of User IDs to tuples of Room IDs
+        # (get_global will return a frozendict of tuples as it freezes the data,
+        # but we should accept either frozen or unfrozen variants.)
+        dm_map: Dict[str, Tuple[str, ...]] = dict(
             await self._api.account_data_manager.get_global(
                 user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
             )
@@ -126,17 +128,20 @@ class InviteAutoAccepter:
         )
 
         if dm_user_id not in dm_map:
-            dm_map[dm_user_id] = [room_id]
+            dm_map[dm_user_id] = (room_id,)
         else:
-            if not isinstance(dm_map[dm_user_id], list):
+            dm_rooms_for_user = dm_map[dm_user_id]
+            if not isinstance(dm_rooms_for_user, (tuple, list)):
                 # Don't mangle the data if we don't understand it.
                 logger.warning(
-                    "Not marking room as DM for auto-accepted invitatation; dm_map[%r] not a list.",
+                    "Not marking room as DM for auto-accepted invitatation; "
+                    "dm_map[%r] is a %s not a list.",
+                    type(dm_rooms_for_user),
                     dm_user_id,
                 )
                 return
 
-            dm_map[dm_user_id].append(room_id)
+            dm_map[dm_user_id] = tuple(dm_rooms_for_user) + (room_id,)
 
         await self._api.account_data_manager.put_global(
             user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST, dm_map
