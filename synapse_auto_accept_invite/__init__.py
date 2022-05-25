@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Tuple, Union
 
 import attr
 from synapse.module_api import EventBase, ModuleApi
@@ -120,7 +120,9 @@ class InviteAutoAccepter:
         # This dict of User IDs to tuples of Room IDs
         # (get_global will return a frozendict of tuples as it freezes the data,
         # but we should accept either frozen or unfrozen variants.)
-        dm_map: Dict[str, Tuple[str, ...]] = dict(
+        dm_map: Dict[
+            str, Union[str, float, Tuple[object, ...], Mapping[str, object], None]
+        ] = dict(
             await self._api.account_data_manager.get_global(
                 user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST
             )
