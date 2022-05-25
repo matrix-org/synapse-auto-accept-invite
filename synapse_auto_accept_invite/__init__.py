@@ -134,7 +134,7 @@ class InviteAutoAccepter:
             if not isinstance(dm_rooms_for_user, (tuple, list)):
                 # Don't mangle the data if we don't understand it.
                 logger.warning(
-                    "Not marking room as DM for auto-accepted invitatation; "
+                    "Not marking room as DM for auto-accepted invitation; "
                     "dm_map[%r] is a %s not a list.",
                     type(dm_rooms_for_user),
                     dm_user_id,
