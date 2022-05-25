@@ -117,7 +117,7 @@ class InviteAutoAccepter:
         from the perspective of the user `user_id`.
         """
 
-        # This dict of User IDs to tuples of Room IDs
+        # This is a dict of User IDs to tuples of Room IDs
         # (get_global will return a frozendict of tuples as it freezes the data,
         # but we should accept either frozen or unfrozen variants.)
         dm_map: Dict[str, Tuple[str, ...]] = dict(
