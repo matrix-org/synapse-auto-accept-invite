@@ -15,6 +15,7 @@ from typing import cast
 from unittest.mock import Mock
 
 import aiounittest
+from frozendict import frozendict
 
 from synapse_auto_accept_invite import InviteAutoAccepter
 from tests import MockEvent, create_module, make_awaitable
@@ -78,9 +79,11 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             Mock, self.module._api.account_data_manager.get_global
         )
         account_data_get.return_value = make_awaitable(
-            {
-                "@someone:random": ["!somewhere:random"],
-            }
+            frozendict(
+                {
+                    "@someone:random": ("!somewhere:random",),
+                }
+            )
         )
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
@@ -104,8 +107,8 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             self.invitee,
             "m.direct",
             {
-                "@someone:random": ["!somewhere:random"],
-                self.user_id: ["!the:room"],
+                "@someone:random": ("!somewhere:random",),
+                self.user_id: ("!the:room",),
             },
         )
 
