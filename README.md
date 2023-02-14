@@ -24,10 +24,17 @@ modules:
       accept_invites_only_for_direct_messages: false
 
       # (For workerised Synapse deployments)
-      # If you want to accept invites on a specific worker, specify its instance
-      # name here. Otherwise, invites will be processed on the main process.
       #
-      # Any worker can be used.
+      # This module should only be active on a single worker process at once,
+      # otherwise invites may be accepted by multiple workers simultaneously.
+      #
+      # By default, this module is only enabled on the main process, and is disabled
+      # on workers. To choose a worker to run this module on (to reduce load on the
+      # main process), specify that worker's configured 'worker_name' below.
+      #
+      # Any worker may be specified. If this worker does not have the ability to
+      # write to Synapse's events stream, it will end up calling out to one that
+      # does.
       #
       #worker_to_run_on: workername1
 ```
