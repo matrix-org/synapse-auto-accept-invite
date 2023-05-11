@@ -95,12 +95,16 @@ class InviteAutoAccepter:
                 not self._config.accept_invites_only_for_direct_messages
                 or is_direct_message is True
             ):
-                # Make the user join the room.
-                await self._api.update_room_membership(
-                    sender=event.state_key,
-                    target=event.state_key,
-                    room_id=event.room_id,
-                    new_membership="join",
+                # Make the user join the room. We run this as a background process to circumvent a race condition
+                # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
+                self._api.run_as_background_process(
+                    "retry_make_join",
+                    self._retry_make_join,
+                    event.state_key,
+                    event.state_key,
+                    event.room_id,
+                    "join",
+                    bg_start_span=False,
                 )
 
                 if is_direct_message:
@@ -149,3 +153,40 @@ class InviteAutoAccepter:
         await self._api.account_data_manager.put_global(
             user_id, ACCOUNT_DATA_DIRECT_MESSAGE_LIST, dm_map
         )
+
+    async def _retry_make_join(
+        self, sender: str, target: str, room_id: str, new_membership: str
+    ) -> None:
+        """
+        A function to retry sending the `make_join` request with an increasing backoff. This is
+        implemented to work around a race condition when receiving invites over federation.
+
+        Args:
+            sender: the user performing the membership change
+            target: the for whom the membership is changing
+            room_id: room id of the room to join to
+            new_membership: the type of membership event (in this case will be "join")
+        """
+
+        sleep = 0
+        retries = 0
+        join_event = None
+
+        while retries < 5:
+            try:
+                await self._api.sleep(sleep)
+                join_event = await self._api.update_room_membership(
+                    sender=sender,
+                    target=target,
+                    room_id=room_id,
+                    new_membership=new_membership,
+                )
+            except Exception as e:
+                logger.info(
+                    f"Update_room_membership raised the following execption: {e}"
+                )
+                sleep += 1
+                retries += 1
+
+            if join_event is not None:
+                break
