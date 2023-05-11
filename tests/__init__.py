@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 from typing import Any, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
@@ -59,9 +60,12 @@ def create_module(
     module_api.is_mine.side_effect = lambda a: a.split(":")[1] == "test"
     module_api.worker_name = worker_name
 
-    # Python 3.6 doesn't support awaiting on a mock, so we make it return an awaitable
-    # value.
-    module_api.update_room_membership.return_value = make_awaitable(None)
     config = InviteAutoAccepter.parse_config(config_override)
+
+    module_api.run_as_background_process.side_effect = (
+        lambda desc, func, *args, bg_start_span, **kwargs: asyncio.create_task(
+            func(*args, **kwargs)
+        )
+    )
 
     return InviteAutoAccepter(config, module_api)
