@@ -13,7 +13,7 @@
 # limitations under the License.
 import asyncio
 from typing import Any, cast
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import aiounittest
 from frozendict import frozendict
@@ -355,7 +355,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         ).assert_called_once()
 
     async def retry_assertions(
-        self, mock: AsyncMock, call_count: int, **kwargs: Any
+        self, mock: Mock, call_count: int, **kwargs: Any
     ) -> None:
         """
         This is a hacky way to ensure that the assertions are not called before the other coroutine
