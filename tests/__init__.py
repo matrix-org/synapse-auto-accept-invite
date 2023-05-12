@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
 import attr
-from synapse.module_api import ModuleApi
+from synapse.module_api import ModuleApi, run_as_background_process
 
 from synapse_auto_accept_invite import InviteAutoAccepter
 
@@ -62,7 +62,7 @@ def create_module(
 
     config = InviteAutoAccepter.parse_config(config_override)
 
-    module_api.run_as_background_process.side_effect = (
+    run_as_background_process.side_effect = (
         lambda desc, func, *args, bg_start_span, **kwargs: asyncio.create_task(
             func(*args, **kwargs)
         )

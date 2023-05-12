@@ -15,7 +15,7 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 import attr
-from synapse.module_api import EventBase, ModuleApi
+from synapse.module_api import EventBase, ModuleApi, run_as_background_process
 
 logger = logging.getLogger(__name__)
 ACCOUNT_DATA_DIRECT_MESSAGE_LIST = "m.direct"
@@ -97,7 +97,7 @@ class InviteAutoAccepter:
             ):
                 # Make the user join the room. We run this as a background process to circumvent a race condition
                 # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
-                self._api.run_as_background_process(
+                run_as_background_process(
                     "retry_make_join",
                     self._retry_make_join,
                     event.state_key,
