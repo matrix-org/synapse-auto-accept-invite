@@ -376,9 +376,9 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
                 mock.assert_called_with(**kwargs)
                 self.assertEqual(call_count, mock.call_count)
                 break
-            except AssertionError:
+            except AssertionError as e:
                 i += 1
                 if i == 5:
                     # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
+                    self.fail(e)
                 await asyncio.sleep(1)
