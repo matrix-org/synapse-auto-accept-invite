@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-from typing import cast
-from unittest.mock import Mock
+from typing import Any, cast
+from unittest.mock import AsyncMock, Mock
 
 import aiounittest
 from frozendict import frozendict
@@ -56,27 +56,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # this is a hacky way to ensure that the assert is not called before the other coroutine
-        # has a chance to call `update_room_membership`. It catches the exeception caused by a failure,
-        # and sleeps the thread before retrying, up until 5 tries.
-        i = 0
-        while i < 5:
-            try:
-                # Check that the mocked method is called exactly once and with the right
-                # arguments to attempt to make the user join the room.
-                self.mocked_update_membership.assert_called_once_with(
-                    sender=invite.state_key,
-                    target=invite.state_key,
-                    room_id=invite.room_id,
-                    new_membership="join",
-                )
-                break
-            except AssertionError:
-                i += 1
-                if i == 5:
-                    # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
-                await asyncio.sleep(1)
+        await self.retry_assertions(
+            self.mocked_update_membership,
+            1,
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
     async def test_accept_invite_with_failures(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
@@ -107,28 +94,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # this is a hacky way to ensure that the assert is not called before the other coroutine
-        # has a chance to call `update_room_membership`. It catches the exception caused by a failure,
-        # and sleeps the thread before retrying, up until 5 tries.
-        i = 0
-        while i < 5:
-            try:
-                # Check that the mocked method is called the expected number of times and with the right
-                # arguments to attempt to make the user join the room.
-                self.mocked_update_membership.assert_called_with(
-                    sender=invite.state_key,
-                    target=invite.state_key,
-                    room_id=invite.room_id,
-                    new_membership="join",
-                )
-                self.assertEqual(self.mocked_update_membership.call_count, 3)
-                break
-            except AssertionError:
-                i += 1
-                if i == 5:
-                    # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
-                await asyncio.sleep(1)
+        await self.retry_assertions(
+            self.mocked_update_membership,
+            3,
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
     async def test_accept_invite_failures(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
@@ -148,28 +121,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # this is a hacky way to ensure that the assert is not called before the other coroutine
-        # has a chance to call `update_room_membership`. It catches the exception caused by a failure,
-        # and sleeps the thread before retrying, up until 5 tries.
-        i = 0
-        while i < 5:
-            try:
-                # Check that the mocked method is called the expected amount of times and with the right
-                # arguments to attempt to make the user join the room.
-                self.mocked_update_membership.assert_called_with(
-                    sender=invite.state_key,
-                    target=invite.state_key,
-                    room_id=invite.room_id,
-                    new_membership="join",
-                )
-                self.assertEqual(self.mocked_update_membership.call_count, 5)
-                break
-            except AssertionError:
-                i += 1
-                if i == 5:
-                    # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
-                await asyncio.sleep(1)
+        await self.retry_assertions(
+            self.mocked_update_membership,
+            5,
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
     async def test_accept_invite_direct_message(self) -> None:
         """Tests that receiving an invite for a local user makes the module attempt to
@@ -214,27 +173,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # this is a hacky way to ensure that the assert is not called before the other coroutine
-        # has a chance to call `update_room_membership`. It catches the exception caused by a failure,
-        # and sleeps the thread before retrying, up until 5 tries.
-        i = 0
-        while i < 5:
-            try:
-                # Check that the mocked method is called the expected amount of times and with the right
-                # arguments to attempt to make the user join the room.
-                self.mocked_update_membership.assert_called_once_with(
-                    sender=invite.state_key,
-                    target=invite.state_key,
-                    room_id=invite.room_id,
-                    new_membership="join",
-                )
-                break
-            except AssertionError:
-                i += 1
-                if i == 5:
-                    # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
-                await asyncio.sleep(1)
+        await self.retry_assertions(
+            self.mocked_update_membership,
+            1,
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
         account_data_get.assert_called_once_with(self.invitee, "m.direct")
 
@@ -345,27 +291,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         # EventBase.
         await module.on_new_event(event=invite)  # type: ignore[arg-type]
 
-        # this is a hacky way to ensure that the assert is not called before the other coroutine
-        # has a chance to call `update_room_membership`. It catches the exception caused by a failure,
-        # and sleeps the thread before retrying, up until 5 tries.
-        i = 0
-        while i < 5:
-            try:
-                # Check that the mocked method is called the expected amount of times and with the right
-                # arguments to attempt to make the user join the room.
-                mocked_update_membership.assert_called_once_with(
-                    sender=invite.state_key,
-                    target=invite.state_key,
-                    room_id=invite.room_id,
-                    new_membership="join",
-                )
-                break
-            except AssertionError:
-                i += 1
-                if i == 5:
-                    # we've used up the tries, force the test to fail as we've already caught the exception
-                    self.fail()
-                await asyncio.sleep(1)
+        await self.retry_assertions(
+            mocked_update_membership,
+            1,
+            sender=invite.state_key,
+            target=invite.state_key,
+            room_id=invite.room_id,
+            new_membership="join",
+        )
 
     async def test_ignore_invite_if_only_enabled_for_direct_messages(self) -> None:
         """Tests that, if the module is configured to only accept DM invites, invites to non-DM rooms are ignored."""
@@ -420,3 +353,32 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         cast(
             Mock, specified_module._api.register_third_party_rules_callbacks
         ).assert_called_once()
+
+    async def retry_assertions(
+        self, mock: AsyncMock, call_count: int, **kwargs: Any
+    ) -> None:
+        """
+        This is a hacky way to ensure that the assertions are not called before the other coroutine
+        has a chance to call `update_room_membership`. It catches the exception caused by a failure,
+        and sleeps the thread before retrying, up until 5 tries.
+
+        Args:
+            call_count: the number of times the mock should have been called
+            mock: the mocked function we want to assert on
+            kwargs: keyword arguments to assert that the mock was called with
+        """
+
+        i = 0
+        while i < 5:
+            try:
+                # Check that the mocked method is called the expected amount of times and with the right
+                # arguments to attempt to make the user join the room.
+                mock.assert_called_with(**kwargs)
+                self.assertEqual(call_count, mock.call_count)
+                break
+            except AssertionError:
+                i += 1
+                if i == 5:
+                    # we've used up the tries, force the test to fail as we've already caught the exception
+                    self.fail()
+                await asyncio.sleep(1)
