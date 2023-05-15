@@ -59,7 +59,7 @@ def make_multiple_awaitable(result: TV) -> Awaitable[TV]:
     This uses Futures as they can be awaited multiple times so can be returned
     to multiple callers. Stolen from synapse.
     """
-    future = Future()
+    future: Future[TV] = Future()
     future.set_result(result)
     return future
 
