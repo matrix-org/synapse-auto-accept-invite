@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-from typing import Any, Dict, Optional, TypeVar
+from concurrent.futures import Future
+from typing import Any, Awaitable, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
 import attr
@@ -45,10 +46,22 @@ class MockEvent:
 
 
 T = TypeVar("T")
+TV = TypeVar("TV")
 
 
 async def make_awaitable(value: T) -> T:
     return value
+
+
+def make_multiple_awaitable(result: TV) -> Awaitable[TV]:
+    """
+    Makes an awaitable, suitable for mocking an `async` function.
+    This uses Futures as they can be awaited multiple times so can be returned
+    to multiple callers. Stolen from synapse.
+    """
+    future = Future()
+    future.set_result(result)
+    return future
 
 
 def create_module(
@@ -59,6 +72,7 @@ def create_module(
     module_api = Mock(spec=ModuleApi)
     module_api.is_mine.side_effect = lambda a: a.split(":")[1] == "test"
     module_api.worker_name = worker_name
+    module_api.sleep.return_value = make_multiple_awaitable(None)
 
     config = InviteAutoAccepter.parse_config(config_override)
 

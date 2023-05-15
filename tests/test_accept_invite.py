@@ -50,7 +50,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             type="m.room.member",
             content={"membership": "join"},
         )
-        self.mocked_update_membership.return_value = join_event
+        self.mocked_update_membership.return_value = make_awaitable(join_event)
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
         # EventBase.
@@ -87,7 +87,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         self.mocked_update_membership.side_effect = [
             Exception(),
             Exception(),
-            join_event,
+            make_awaitable(join_event),
         ]
 
         # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
@@ -149,7 +149,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             type="m.room.member",
             content={"membership": "join"},
         )
-        self.mocked_update_membership.return_value = join_event
+        self.mocked_update_membership.return_value = make_awaitable(join_event)
 
         # We will mock out the account data get/put methods to check that the flags
         # are properly set.
@@ -278,7 +278,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             type="m.room.member",
             content={"membership": "join"},
         )
-        mocked_update_membership.return_value = join_event
+        mocked_update_membership.return_value = make_awaitable(join_event)
 
         invite = MockEvent(
             sender=self.user_id,
