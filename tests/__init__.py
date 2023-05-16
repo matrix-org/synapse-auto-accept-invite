@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Dict, Optional, TypeVar
+import asyncio
+from asyncio import Future
+from typing import Any, Awaitable, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
 import attr
-from synapse.module_api import ModuleApi
+from synapse.module_api import ModuleApi, run_as_background_process
 
 from synapse_auto_accept_invite import InviteAutoAccepter
 
@@ -44,10 +46,22 @@ class MockEvent:
 
 
 T = TypeVar("T")
+TV = TypeVar("TV")
 
 
 async def make_awaitable(value: T) -> T:
     return value
+
+
+def make_multiple_awaitable(result: TV) -> Awaitable[TV]:
+    """
+    Makes an awaitable, suitable for mocking an `async` function.
+    This uses Futures as they can be awaited multiple times so can be returned
+    to multiple callers. Stolen from synapse.
+    """
+    future: Future[TV] = Future()
+    future.set_result(result)
+    return future
 
 
 def create_module(
@@ -58,10 +72,14 @@ def create_module(
     module_api = Mock(spec=ModuleApi)
     module_api.is_mine.side_effect = lambda a: a.split(":")[1] == "test"
     module_api.worker_name = worker_name
+    module_api.sleep.return_value = make_multiple_awaitable(None)
 
-    # Python 3.6 doesn't support awaiting on a mock, so we make it return an awaitable
-    # value.
-    module_api.update_room_membership.return_value = make_awaitable(None)
     config = InviteAutoAccepter.parse_config(config_override)
+
+    run_as_background_process.side_effect = (
+        lambda desc, func, *args, bg_start_span, **kwargs: asyncio.create_task(
+            func(*args, **kwargs)
+        )
+    )
 
     return InviteAutoAccepter(config, module_api)
