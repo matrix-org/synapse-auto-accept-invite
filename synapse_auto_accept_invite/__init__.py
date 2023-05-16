@@ -183,9 +183,9 @@ class InviteAutoAccepter:
                 )
             except Exception as e:
                 logger.info(
-                    f"Update_room_membership raised the following execption: {e}"
+                    f"Update_room_membership raised the following exception: {e}"
                 )
-                sleep += 1
+                sleep = 2**retries
                 retries += 1
 
             if join_event is not None:
