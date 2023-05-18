@@ -2,7 +2,7 @@
 
 Synapse module to automatically accept invites.
 
-Compatible with Synapse v1.57.0 and later.
+Compatible with Synapse v1.84.0 and later.
 
 ## Installation
 
