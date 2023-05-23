@@ -76,6 +76,7 @@ def create_module(
 
     config = InviteAutoAccepter.parse_config(config_override)
 
+    run_as_background_process = Mock()
     run_as_background_process.side_effect = (
         lambda desc, func, *args, bg_start_span, **kwargs: asyncio.create_task(
             func(*args, **kwargs)
