@@ -17,7 +17,7 @@ from typing import Any, Awaitable, Dict, Optional, TypeVar
 from unittest.mock import Mock
 
 import attr
-from synapse.module_api import ModuleApi, run_as_background_process
+from synapse.module_api import ModuleApi
 
 from synapse_auto_accept_invite import InviteAutoAccepter
 
