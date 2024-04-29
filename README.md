@@ -19,14 +19,9 @@ modules:
   - module: synapse_auto_accept_invite.InviteAutoAccepter
     config:
       # Optional: if set to true, then only invites for direct messages (1:1 rooms)
-      # will be auto accepted.
+      # will be auto accepted. Otherwise, all room invites are accepted.
       # Defaults to false.
       accept_invites_only_for_direct_messages: false
-
-      # Optional: if set to true, then only invites from local users will be auto 
-      # accepted.
-      # Defaults to false.
-      accept_invites_only_from_local_users: false
 
       # (For workerised Synapse deployments)
       #

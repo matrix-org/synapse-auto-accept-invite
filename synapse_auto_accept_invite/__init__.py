@@ -24,7 +24,6 @@ ACCOUNT_DATA_DIRECT_MESSAGE_LIST = "m.direct"
 @attr.s(auto_attribs=True, frozen=True)
 class InviteAutoAccepterConfig:
     accept_invites_only_for_direct_messages: bool = False
-    accept_invites_only_from_local_users: bool = False
     worker_to_run_on: Optional[str] = None
 
 
@@ -67,15 +66,11 @@ class InviteAutoAccepter:
         accept_invites_only_for_direct_messages = config.get(
             "accept_invites_only_for_direct_messages", False
         )
-        accept_invites_only_from_local_users = config.get(
-            "accept_invites_only_from_local_users", False
-        )
 
         worker_to_run_on = config.get("worker_to_run_on", None)
 
         return InviteAutoAccepterConfig(
             accept_invites_only_for_direct_messages=accept_invites_only_for_direct_messages,
-            accept_invites_only_from_local_users=accept_invites_only_from_local_users,
             worker_to_run_on=worker_to_run_on,
         )
 
@@ -87,49 +82,36 @@ class InviteAutoAccepter:
             event: The incoming event.
         """
         # Check if the event is an invite for a local user.
-        is_invite_for_local_user = (
+        if (
             event.type == "m.room.member"
             and event.is_state()
             and event.membership == "invite"
             and self._api.is_mine(event.state_key)
-        )
-
-        # Only accept invites for direct messages if the configuration mandates it.
-        is_direct_message = event.content.get("is_direct", False)
-        is_allowed_by_direct_message_rules = (
-            not self._config.accept_invites_only_for_direct_messages
-            or is_direct_message is True
-        )
-
-        # Only accept invites from remote users if the configuration mandates it.
-        is_from_local_user = self._api.is_mine(event.sender)
-        is_allowed_by_local_user_rules = (
-            not self._config.accept_invites_only_from_local_users
-            or is_from_local_user is True
-        )
-
-        if (
-            is_invite_for_local_user
-            and is_allowed_by_direct_message_rules
-            and is_allowed_by_local_user_rules
         ):
-            # Make the user join the room. We run this as a background process to circumvent a race condition
-            # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
-            run_as_background_process(
-                "retry_make_join",
-                self._retry_make_join,
-                event.state_key,
-                event.state_key,
-                event.room_id,
-                "join",
-                bg_start_span=False,
-            )
+            is_direct_message = event.content.get("is_direct", False)
 
-            if is_direct_message:
-                # Mark this room as a direct message!
-                await self._mark_room_as_direct_message(
-                    event.state_key, event.sender, event.room_id
+            # Only accept invites for direct messages if the configuration mandates it, otherwise accept all invites.
+            if (
+                not self._config.accept_invites_only_for_direct_messages
+                or is_direct_message is True
+            ):
+                # Make the user join the room. We run this as a background process to circumvent a race condition
+                # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
+                run_as_background_process(
+                    "retry_make_join",
+                    self._retry_make_join,
+                    event.state_key,
+                    event.state_key,
+                    event.room_id,
+                    "join",
+                    bg_start_span=False,
                 )
+
+                if is_direct_message:
+                    # Mark this room as a direct message!
+                    await self._mark_room_as_direct_message(
+                        event.state_key, event.sender, event.room_id
+                    )
 
     async def _mark_room_as_direct_message(
         self, user_id: str, dm_user_id: str, room_id: str

@@ -195,7 +195,7 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
             },
         )
 
-    async def test_invite_remote_user(self) -> None:
+    async def test_remote_user(self) -> None:
         """Tests that receiving an invite for a remote user does nothing."""
         invite = MockEvent(
             sender=self.user_id,
@@ -209,36 +209,6 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
 
         self.mocked_update_membership.assert_not_called()
-
-    async def test_invite_from_remote_user(self) -> None:
-        """Tests that receiving an invite for a local user, from a remote user, makes the
-        module attempt to make the invitee join the room."""
-        invite = MockEvent(
-            sender=self.remote_invitee,
-            state_key=self.invitee,
-            type="m.room.member",
-            content={"membership": "invite"},
-        )
-        join_event = MockEvent(
-            sender="someone",
-            state_key="someone",
-            type="m.room.member",
-            content={"membership": "join"},
-        )
-        self.mocked_update_membership.return_value = make_awaitable(join_event)
-
-        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
-        # EventBase.
-        await self.module.on_new_event(event=invite)  # type: ignore[arg-type]
-
-        await self.retry_assertions(
-            self.mocked_update_membership,
-            1,
-            sender=invite.state_key,
-            target=invite.state_key,
-            room_id=invite.room_id,
-            new_membership="join",
-        )
 
     async def test_not_state(self) -> None:
         """Tests that receiving an invite that's not a state event does nothing."""
@@ -350,83 +320,14 @@ class InviteAutoAccepterTestCase(aiounittest.AsyncTestCase):
         mocked_update_membership: Mock = module._api.update_room_membership  # type: ignore[assignment]
         mocked_update_membership.assert_not_called()
 
-    async def test_accept_invite_local_user_if_only_enabled_from_local_users(
-        self,
-    ) -> None:
-        """Tests that, if the module is configured to only accept invites from local users, invites
-        from local users are still automatically accepted.
-        """
-        module = create_module(
-            config_override={"accept_invites_only_from_local_users": True},
-        )
-
-        # Patch out the account data get and put methods with dummy awaitables.
-        account_data_put: Mock = cast(Mock, module._api.account_data_manager.put_global)
-        account_data_put.return_value = make_awaitable(None)
-
-        account_data_get: Mock = cast(Mock, module._api.account_data_manager.get_global)
-        account_data_get.return_value = make_awaitable({})
-
-        mocked_update_membership: Mock = module._api.update_room_membership  # type: ignore[assignment]
-        join_event = MockEvent(
-            sender="someone",
-            state_key="someone",
-            type="m.room.member",
-            content={"membership": "join"},
-        )
-        mocked_update_membership.return_value = make_awaitable(join_event)
-
-        invite = MockEvent(
-            sender=self.user_id,
-            state_key=self.invitee,
-            type="m.room.member",
-            content={"membership": "invite", "is_direct": True},
-        )
-
-        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
-        # EventBase.
-        await module.on_new_event(event=invite)  # type: ignore[arg-type]
-
-        await self.retry_assertions(
-            mocked_update_membership,
-            1,
-            sender=invite.state_key,
-            target=invite.state_key,
-            room_id=invite.room_id,
-            new_membership="join",
-        )
-
-    async def test_ignore_invite_if_only_enabled_from_local_users(self) -> None:
-        """Tests that, if the module is configured to only accept invites from local users,
-        invites from non-local users are ignored."""
-        module = create_module(
-            config_override={"accept_invites_only_from_local_users": True},
-        )
-
-        invite = MockEvent(
-            sender=self.remote_invitee,
-            state_key=self.invitee,
-            type="m.room.member",
-            content={"membership": "invite"},
-        )
-
-        # Stop mypy from complaining that we give on_new_event a MockEvent rather than an
-        # EventBase.
-        await module.on_new_event(event=invite)  # type: ignore[arg-type]
-
-        mocked_update_membership: Mock = module._api.update_room_membership  # type: ignore[assignment]
-        mocked_update_membership.assert_not_called()
-
     def test_config_parse(self) -> None:
         """Tests that a correct configuration passes parse_config."""
         config = {
             "accept_invites_only_for_direct_messages": True,
-            "accept_invites_only_from_local_users": True,
         }
         parsed_config = InviteAutoAccepter.parse_config(config)
 
         self.assertTrue(parsed_config.accept_invites_only_for_direct_messages)
-        self.assertTrue(parsed_config.accept_invites_only_from_local_users)
 
     def test_runs_on_only_one_worker(self) -> None:
         """
