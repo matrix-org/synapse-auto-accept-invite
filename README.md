@@ -28,6 +28,11 @@ modules:
       # Defaults to false.
       accept_invites_only_from_local_users: false
 
+      # Optional: if set to true, invites for suspended users will be auto
+      # accepted.
+      # Defaults to false.
+      accept_invites_for_suspended_users: false
+
       # (For workerised Synapse deployments)
       #
       # This module should only be active on a single worker process at once,
