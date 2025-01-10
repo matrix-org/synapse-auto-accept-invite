@@ -18,6 +18,7 @@ from unittest.mock import Mock
 
 import attr
 from synapse.module_api import ModuleApi
+from synapse.types import UserID, UserInfo
 
 from synapse_auto_accept_invite import InviteAutoAccepter
 
@@ -73,6 +74,22 @@ def create_module(
     module_api.is_mine.side_effect = lambda a: a.split(":")[1] == "test"
     module_api.worker_name = worker_name
     module_api.sleep.return_value = make_multiple_awaitable(None)
+    module_api.get_userinfo_by_id.return_value = UserInfo(
+        user_id=UserID.from_string("@user:test"),
+        is_admin=False,
+        is_guest=False,
+        consent_server_notice_sent=None,
+        consent_ts=None,
+        consent_version=None,
+        appservice_id=None,
+        creation_ts=0,
+        user_type=None,
+        is_deactivated=False,
+        locked=False,
+        is_shadow_banned=False,
+        approved=True,
+        suspended=False,
+    )
 
     config = InviteAutoAccepter.parse_config(config_override)
 
