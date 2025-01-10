@@ -25,6 +25,7 @@ ACCOUNT_DATA_DIRECT_MESSAGE_LIST = "m.direct"
 class InviteAutoAccepterConfig:
     accept_invites_only_for_direct_messages: bool = False
     accept_invites_only_from_local_users: bool = False
+    accept_invites_for_suspended_users: bool = False
     worker_to_run_on: Optional[str] = None
 
 
@@ -70,12 +71,16 @@ class InviteAutoAccepter:
         accept_invites_only_from_local_users = config.get(
             "accept_invites_only_from_local_users", False
         )
+        accept_invites_for_suspended_users = config.get(
+            "accept_invites_for_suspended_users", False
+        )
 
         worker_to_run_on = config.get("worker_to_run_on", None)
 
         return InviteAutoAccepterConfig(
             accept_invites_only_for_direct_messages=accept_invites_only_for_direct_messages,
             accept_invites_only_from_local_users=accept_invites_only_from_local_users,
+            accept_invites_for_suspended_users=accept_invites_for_suspended_users,
             worker_to_run_on=worker_to_run_on,
         )
 
@@ -86,50 +91,64 @@ class InviteAutoAccepter:
         Args:
             event: The incoming event.
         """
+
         # Check if the event is an invite for a local user.
-        is_invite_for_local_user = (
+        if not (
             event.type == "m.room.member"
             and event.is_state()
             and event.membership == "invite"
             and self._api.is_mine(event.state_key)
-        )
+        ):
+            return
 
         # Only accept invites for direct messages if the configuration mandates it.
         is_direct_message = event.content.get("is_direct", False)
-        is_allowed_by_direct_message_rules = (
-            not self._config.accept_invites_only_for_direct_messages
-            or is_direct_message is True
-        )
+        if (
+            self._config.accept_invites_only_for_direct_messages
+            and is_direct_message is False
+        ):
+            return
 
         # Only accept invites from remote users if the configuration mandates it.
         is_from_local_user = self._api.is_mine(event.sender)
-        is_allowed_by_local_user_rules = (
-            not self._config.accept_invites_only_from_local_users
-            or is_from_local_user is True
+        if (
+            self._config.accept_invites_only_from_local_users
+            and is_from_local_user is False
+        ):
+            return
+
+        # Check the user is activated.
+        recipient = await self._api.get_userinfo_by_id(event.state_key)
+
+        # Ignore if the user doesn't exist.
+        if recipient is None:
+            return
+
+        # Never accept invites for deactivated users.
+        if recipient.is_deactivated:
+            return
+
+        # Only accept invites for suspended remote if the configuration mandates it.
+        if not self._config.accept_invites_for_suspended_users and recipient.suspended:
+            return
+
+        # Make the user join the room. We run this as a background process to circumvent a race condition
+        # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
+        run_as_background_process(
+            "retry_make_join",
+            self._retry_make_join,
+            event.state_key,
+            event.state_key,
+            event.room_id,
+            "join",
+            bg_start_span=False,
         )
 
-        if (
-            is_invite_for_local_user
-            and is_allowed_by_direct_message_rules
-            and is_allowed_by_local_user_rules
-        ):
-            # Make the user join the room. We run this as a background process to circumvent a race condition
-            # that occurs when responding to invites over federation (see https://github.com/matrix-org/synapse-auto-accept-invite/issues/12)
-            run_as_background_process(
-                "retry_make_join",
-                self._retry_make_join,
-                event.state_key,
-                event.state_key,
-                event.room_id,
-                "join",
-                bg_start_span=False,
+        if is_direct_message:
+            # Mark this room as a direct message!
+            await self._mark_room_as_direct_message(
+                event.state_key, event.sender, event.room_id
             )
-
-            if is_direct_message:
-                # Mark this room as a direct message!
-                await self._mark_room_as_direct_message(
-                    event.state_key, event.sender, event.room_id
-                )
 
     async def _mark_room_as_direct_message(
         self, user_id: str, dm_user_id: str, room_id: str
